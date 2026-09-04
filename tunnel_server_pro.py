@@ -20,6 +20,8 @@ Version: 2.0.0
 License: MIT
 """
 
+import os
+import hmac
 import asyncio
 import websockets
 import logging
@@ -48,6 +50,9 @@ class ServerConfig:
     ws_port: int = 80
     target_tcp_host: str = "127.0.0.1"
     target_tcp_port: int = 1453
+
+    # Authentication (leave empty to allow open access, or set WSSPROXY_AUTH_TOKEN)
+    auth_token: str = field(default_factory=lambda: os.environ.get("WSSPROXY_AUTH_TOKEN", ""))
 
     # Ngrok settings
     ngrok_domain: str = "your-domain.ngrok-free.app"
@@ -370,6 +375,36 @@ class WebSocketHandler:
         """Main WebSocket handling loop"""
         self.logger.info(f"[{self.client_addr}] 🔗 WebSocket connected")
         
+        # Authentication check
+        if self.config.auth_token:
+            token_valid = False
+            auth_header = None
+            if hasattr(self.websocket, "request_headers"):
+                auth_header = self.websocket.request_headers.get("Authorization")
+            elif hasattr(self.websocket, "request") and hasattr(self.websocket.request, "headers"):
+                auth_header = self.websocket.request.headers.get("Authorization")
+            
+            if auth_header:
+                provided_token = auth_header[7:].strip() if auth_header.startswith("Bearer ") else auth_header.strip()
+                if hmac.compare_digest(provided_token, self.config.auth_token):
+                    token_valid = True
+            
+            if not token_valid:
+                req_path = getattr(self.websocket, "path", None)
+                if not req_path and hasattr(self.websocket, "request"):
+                    req_path = getattr(self.websocket.request, "path", None)
+                if req_path and "?" in req_path:
+                    from urllib.parse import parse_qs, urlparse
+                    qs = parse_qs(urlparse(req_path).query)
+                    provided_qs = qs.get("token", [""])[0]
+                    if provided_qs and hmac.compare_digest(provided_qs, self.config.auth_token):
+                        token_valid = True
+            
+            if not token_valid:
+                self.logger.warning(f"[{self.client_addr}] ❌ Unauthorized: Invalid or missing auth token")
+                await self.websocket.close(4001, "Unauthorized: Invalid or missing auth token")
+                return
+
         try:
             # Start receiving messages
             async for raw_message in self.websocket:
@@ -556,6 +591,7 @@ class TunnelServer:
    • Target TCP: {self.config.target_tcp_host}:{self.config.target_tcp_port}
    • Ngrok: {'Enabled' if self.config.ngrok_enabled else 'Disabled'}
    • Domain: {self.config.ngrok_domain if self.config.ngrok_enabled else 'N/A'}
+   • Auth: {'Token Protected' if self.config.auth_token else 'Open (No Auth)'}
    • Max Connections: {self.config.max_connections}
    • Buffer Size: {self.config.tcp_buffer_size} bytes
 

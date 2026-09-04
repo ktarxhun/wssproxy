@@ -20,6 +20,8 @@ Version: 2.0.0
 License: MIT
 """
 
+import os
+import inspect
 import asyncio
 import websockets
 import logging
@@ -43,6 +45,9 @@ class ClientConfig:
     server_url: str = "wss://your-domain.ngrok-free.app"
     local_host: str = "127.0.0.1"
     local_port: int = 1453
+
+    # Authentication (leave empty if server requires no auth, or set WSSPROXY_AUTH_TOKEN)
+    auth_token: str = field(default_factory=lambda: os.environ.get("WSSPROXY_AUTH_TOKEN", ""))
     
     # Performance tuning
     max_message_size: int = 10 * 1024 * 1024  # 10MB
@@ -177,12 +182,22 @@ class WebSocketClientManager:
             try:
                 self.logger.info(f"🔗 Connecting to {self.config.server_url}...")
                 
+                connect_kwargs = {
+                    "ping_interval": self.config.ping_interval,
+                    "ping_timeout": self.config.ping_timeout,
+                    "max_size": self.config.max_message_size,
+                }
+                if self.config.auth_token:
+                    sig = inspect.signature(websockets.connect)
+                    if "additional_headers" in sig.parameters:
+                        connect_kwargs["additional_headers"] = {"Authorization": f"Bearer {self.config.auth_token}"}
+                    else:
+                        connect_kwargs["extra_headers"] = {"Authorization": f"Bearer {self.config.auth_token}"}
+
                 self.websocket = await asyncio.wait_for(
                     websockets.connect(
                         self.config.server_url,
-                        ping_interval=self.config.ping_interval,
-                        ping_timeout=self.config.ping_timeout,
-                        max_size=self.config.max_message_size
+                        **connect_kwargs
                     ),
                     timeout=30.0
                 )
@@ -510,6 +525,7 @@ class TunnelClient:
 📋 Configuration:
    • Local TCP: {self.config.local_host}:{self.config.local_port}
    • Server: {self.config.server_url}
+   • Auth: {'Token Protected' if self.config.auth_token else 'Open (No Auth)'}
    • Auto-reconnect: {'Enabled' if self.config.reconnect_enabled else 'Disabled'}
    • Max Connections: {self.config.max_connections}
    • Buffer Size: {self.config.tcp_buffer_size} bytes

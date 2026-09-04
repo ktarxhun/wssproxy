@@ -105,6 +105,9 @@ class ServerConfig:
     ws_port: int = 80                  # WebSocket port (ngrok connects here)
     target_tcp_host: str = "127.0.0.1" # Your application's host
     target_tcp_port: int = 1453        # Your application's port
+
+    # Authentication (or set WSSPROXY_AUTH_TOKEN env var)
+    auth_token: str = ""               # Shared secret token
     
     # Ngrok settings
     ngrok_domain: str = "your-domain.ngrok-free.app"
@@ -131,6 +134,9 @@ class ClientConfig:
     server_url: str = "wss://your-domain.ngrok-free.app"
     local_host: str = "127.0.0.1"
     local_port: int = 1453
+
+    # Authentication (must match server's auth_token, or set WSSPROXY_AUTH_TOKEN)
+    auth_token: str = ""
     
     # Reconnection settings
     reconnect_enabled: bool = True
