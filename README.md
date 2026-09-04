@@ -52,7 +52,8 @@ This tunnel system allows you to route TCP traffic through WebSocket connections
 python --version
 
 # Install dependencies
-pip install websockets aiohttp
+pip install -r requirements.txt
+# or: pip install websockets aiohttp
 
 # Install ngrok (server only)
 # Download from: https://ngrok.com/download
@@ -148,12 +149,9 @@ class ClientConfig:
 
 ## 🧪 Testing
 
-### Test with Echo Server
+### Quick Connectivity Test
 
-1. **Start test echo server** (included in previous version)
-   ```bash
-   python test_echo_server.py
-   ```
+1. **Point the server at any TCP service you already have running** (e.g. SSH on port 22, or a quick `python -m http.server` for a smoke test)
 
 2. **Start tunnel server**
    ```bash
@@ -426,4 +424,4 @@ For issues and questions:
 
 **Built with ❤️ using Python and WebSockets**
 
-Version 2.0.0 | Last Updated: 2026-02-15
+Version 2.0.0

@@ -47,10 +47,10 @@ class ServerConfig:
     ws_host: str = "0.0.0.0"
     ws_port: int = 80
     target_tcp_host: str = "127.0.0.1"
-    target_tcp_port: int = 22
-    
+    target_tcp_port: int = 1453
+
     # Ngrok settings
-    ngrok_domain: str = "REDACTED-DOMAIN.ngrok-free.app"
+    ngrok_domain: str = "your-domain.ngrok-free.app"
     ngrok_enabled: bool = True
     ngrok_region: str = "eu"  # eu, us, ap, au, sa, jp, in
     

@@ -40,9 +40,9 @@ from collections import deque
 class ClientConfig:
     """Client configuration with sensible defaults"""
     # Network settings
-    server_url: str = "wss://REDACTED-DOMAIN.ngrok-free.app"
+    server_url: str = "wss://your-domain.ngrok-free.app"
     local_host: str = "127.0.0.1"
-    local_port: int = 22
+    local_port: int = 1453
     
     # Performance tuning
     max_message_size: int = 10 * 1024 * 1024  # 10MB
